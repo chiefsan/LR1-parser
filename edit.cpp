@@ -79,6 +79,7 @@ public:
                         string temp = this->productions[i].str();
                         strncpy(production[i], temp.c_str(), sizeof(temp)-1);
                         production[i][sizeof(temp)-1] = '\0';
+                        cout << production[i] << '\n';
                 }
                 int point1 = 0, point2, xxx;
                 for(k = 0; k < count; k++)  {
@@ -243,9 +244,10 @@ int main () {
                                 cout << "Error";
                                 exit(0);
                         }
-                        string lhs = line.substr(0, pos-1);
+                        string lhs = line.substr(0, pos);
                         string rhs = line.substr(pos+1, line.length());
                         G.insertProduction(Production(lhs, rhs));
+//                      cout << "LHS : " << lhs << '\n';
                 }
                 pFile.close();
         }
