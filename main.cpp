@@ -309,11 +309,11 @@ public:
                       lookahead.insert(c);
                     }
                   }
-                  else if (p.rhs[posDot+2]>='a' && p.rhs[posDot+2]<='z') {
-                    lookahead.insert(p.rhs[posDot+2]);
+                  else if (item.rhs[i][posDot+2]>='a' && item.rhs[i][posDot+2]<='z') {
+                    lookahead.insert(item.rhs[i][posDot+2]);
                   }
                   else {
-                    for (char c: fi[p.rhs[posDot+2]]) {
+                    for (char c: fi[item.rhs[i][posDot+2]]) {
                       lookahead.insert(c);
                     }
                   }
