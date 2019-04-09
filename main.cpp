@@ -3,10 +3,10 @@
 using namespace std;
 
 class Production {
-private:
+public:
         string lhs;
         string rhs;
-public:
+
         Production (string lhs, string rhs) {
                 this->lhs = lhs;
                 this->rhs = rhs;
@@ -23,12 +23,29 @@ public:
         }
 };
 
+class Item {
+public:
+  vector <string> lhs;
+  vector <string> rhs;
+  vector < set< char > > lookahead;
+  int noOfRules;
+
+  bool isEqual (Item it) {
+    for (int i=0; i<noOfRules; ++i) {
+      if (it.lhs[i].compare(this->lhs[i])!=0 || it.rhs[i].compare(this->rhs[i])!=0 || it.lookahead[i]!=this->lookahead[i])
+        return false;
+    }
+    return true;
+  }
+};
+
 class Grammar {
 private:
         unsigned int noOfProductions;
         vector <Production> productions;
         vector <string> terminals;
         vector <string> nonTerminals;
+        vector <Item> items;
 
         int count, n;
         char calc_first[10][100];
@@ -58,12 +75,15 @@ public:
         bool insertProduction (Production p) {
                 this->productions.push_back(p);
                 this->noOfProductions+=1;
+                return true;
         }
         bool setTerminals (vector < string > terminals) {
                 this->terminals.swap(terminals);
+                return true;
         }
         bool setNonTerminals (vector < string > nonTerminals) {
                 this->nonTerminals.swap(nonTerminals);
+                return true;
         }
         void preprocess () {
                 int jm = 0;
@@ -268,13 +288,67 @@ public:
                         }
                 }
         }
+
+        Item closure (Item item) {
+          for (int i=0; i<item.noOfRules; ++i) {
+            int posDot = item.rhs[i].find(".");
+            int rhslen = item.rhs[i].length();
+            if (rhslen-1==posDot)
+              continue;
+            if (item.rhs[i][posDot+1]>='A' && item.rhs[i][posDot+1]<='Z') {
+              char newlhs = item.rhs[i][posDot+1];
+              for (Production p: this->productions) {
+                if (p.lhs[0]==newlhs) {
+                  string temp = "."+ p.rhs;
+                  item.lhs.push_back(p.lhs);
+                  item.rhs.push_back(temp);
+                  item.noOfRules += 1;
+                  set<char> lookahead;
+                  if (posDot+2==rhslen) {
+                    for (char c: item.lookahead[i]) {
+                      lookahead.insert(c);
+                    }
+                  }
+                  else if (p.rhs[posDot+2]>='a' && p.rhs[posDot+2]<='z') {
+                    lookahead.insert(p.rhs[posDot+2]);
+                  }
+                  else {
+                    for (char c: fi[p.rhs[posDot+2]]) {
+                      lookahead.insert(c);
+                    }
+                  }
+                  item.lookahead.push_back(lookahead);
+                }
+              }
+            }
+          }
+          return item;
+        }
+
+        void constructItems() {
+          Item temp = Item();
+          temp.lhs.push_back("Z");
+          temp.rhs.push_back(".S");
+          set <char> lookahead;
+          lookahead.insert('$');
+          temp.lookahead.push_back(lookahead);
+          temp.noOfRules = 1;
+          temp = closure(temp);
+          for (int i=0; i<temp.noOfRules; ++i) {
+            cout << temp.lhs[i] << " -> " << temp.rhs[i] << " | ";
+            for (char c: temp.lookahead[i]) {
+              cout << c << ' ';
+            }
+            cout << '\n';
+          }
+        }
 };
 
 int main () {
         Grammar G;
         string line;
         ifstream pFile;
-        pFile.open("productions.txt", ios::in);
+        pFile.open("input.txt", ios::in);
         if (pFile.is_open()) {
                 while (getline(pFile, line)) {
                         cout << line << '\n';
@@ -286,7 +360,6 @@ int main () {
                         string lhs = line.substr(0, pos);
                         string rhs = line.substr(pos+1, line.length());
                         G.insertProduction(Production(lhs, rhs));
-//                      cout << "LHS : " << lhs << '\n';
                 }
                 pFile.close();
         }
@@ -326,5 +399,6 @@ int main () {
 
         cout << "\nLOL\n\n";
         G.preprocess();
+        G.constructItems();
         return 0;
 }
