@@ -57,6 +57,7 @@ private:
         vector <string> terminals;
         vector <string> nonTerminals;
         vector <Item> items;
+        unsigned int noOfItems;
 
         int count, n;
         char calc_first[10][100];
@@ -68,6 +69,7 @@ private:
         char ck;
         int e;
         bool called[300];
+        string table[50][50];
         set < pair <char, char> > equal;
         map <char, set<char> > fi;
         map <char, set<char> > fo;
@@ -345,8 +347,18 @@ public:
           temp.lookahead.push_back(lookahead);
           temp.noOfRules = 1;
           temp = closure(temp);
+          items.push_back(temp);
+          noOfItems = 1;
 
-          
+          for (Item item: items) {
+            for (int i=0; i<item.noOfRules; ++i) {
+              int posDot = item.rhs[i].find(".");
+              int rhslen = item.rhs[i].length();
+              bool marked[item.noOfRules] = {false};
+              if (rhslen-1==posDot)
+                continue;
+            }
+          }
         }
 };
 
