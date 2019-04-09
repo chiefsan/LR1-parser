@@ -39,6 +39,17 @@ public:
   }
 };
 
+ostream & operator << (ostream &out, Item temp) {
+  for (int i=0; i<temp.noOfRules; ++i) {
+    cout << temp.lhs[i] << " -> " << temp.rhs[i] << " | ";
+    for (char c: temp.lookahead[i]) {
+      cout << c << ' ';
+    }
+    cout << '\n';
+  }
+  return out;
+}
+
 class Grammar {
 private:
         unsigned int noOfProductions;
@@ -334,13 +345,8 @@ public:
           temp.lookahead.push_back(lookahead);
           temp.noOfRules = 1;
           temp = closure(temp);
-          for (int i=0; i<temp.noOfRules; ++i) {
-            cout << temp.lhs[i] << " -> " << temp.rhs[i] << " | ";
-            for (char c: temp.lookahead[i]) {
-              cout << c << ' ';
-            }
-            cout << '\n';
-          }
+
+          
         }
 };
 
