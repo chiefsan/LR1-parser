@@ -72,7 +72,7 @@ private:
         char ck;
         int e;
         bool called[300];
-        string table[50][50];
+        string table[50][500];
         set < pair <char, char> > equal;
         map <char, set<char> > fi;
         map <char, set<char> > fo;
@@ -95,6 +95,7 @@ public:
         }
         bool insertTerminal (string c) {
           this->terminals.push_back(c);
+          return true;
         }
         bool setTerminals (vector < string > terminals) {
                 // this->terminals.swap(terminals);
@@ -366,6 +367,7 @@ public:
           items.push_back(temp);
           int oldSize = 0;
           int curItem = -1;
+          vector <bool> terminalType;
           while (curItem!=items.size()-1) {
             curItem += 1;
             Item item = items[curItem];
@@ -377,9 +379,20 @@ public:
               int posDot = item.rhs[i].find(".");
               int rhslen = item.rhs[i].length();
               if (rhslen-1==posDot) {
-                1;
+                int index = -1;
+                string s = item.lhs[i]+item.rhs[i].substr(0,posDot);
+                for (int i=0; i<noOfProductions; ++i) {
+                  string t = productions[i].lhs+productions[i].rhs;
+                  if (t==s) {
+                    index = i;
+                  }
+                }
+                for (char c: item.lookahead[i]) {
+                  table[curItem][c] = 'r'+to_string(index);
+                }
               }
             }
+            vector <string> nextSym;
             for (string c: this->terminals) {
               Item temp = Item();
               for (int i=0; i<item.noOfRules; ++i) {
@@ -401,6 +414,8 @@ public:
               if (temp.noOfRules) {
                 // items.push_back(temp);
                 toBeInserted.push_back(temp);
+                terminalType.push_back(true);
+                nextSym.push_back(c);
               }
             }
             for (string c: this->nonTerminals) {
@@ -423,11 +438,14 @@ public:
               }
               if (temp.noOfRules) {
                 toBeInserted.push_back(temp);
+                terminalType.push_back(false);
+                nextSym.push_back(c);
               }
             }
             oldSize = items.size();
-
+            int toBeInsertedIndex = -1;
             for (Item item1: toBeInserted) {
+              toBeInsertedIndex+=1;
               vector <string> toBeInsertedString;
               for (int i=0; i<item1.noOfRules; ++i) {
                 string s;
@@ -466,8 +484,10 @@ public:
                     present = true;
                 }
               }
-              if (present==false)
+              if (present==false) {
+                table[curItem][nextSym[toBeInsertedIndex][0]]='s'+to_string(items.size());
                 items.push_back(item1);
+              }
             }
           }
         }
