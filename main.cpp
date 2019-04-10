@@ -29,6 +29,7 @@ public:
   vector <string> rhs;
   vector < set< char > > lookahead;
   int noOfRules;
+  vector <bool> expanded;
 
   bool isEqual (Item it) {
     for (int i=0; i<noOfRules; ++i) {
@@ -40,13 +41,15 @@ public:
 };
 
 ostream & operator << (ostream &out, Item temp) {
+  cout << "ITEM : ";
   for (int i=0; i<temp.noOfRules; ++i) {
     cout << temp.lhs[i] << " -> " << temp.rhs[i] << " | ";
     for (char c: temp.lookahead[i]) {
-      cout << c << ' ';
+      cout << c << " ";
     }
-    cout << '\n';
+    cout << "\t";
   }
+  cout << '\n';
   return out;
 }
 
@@ -90,12 +93,19 @@ public:
                 this->noOfProductions+=1;
                 return true;
         }
+        bool insertTerminal (string c) {
+          this->terminals.push_back(c);
+        }
         bool setTerminals (vector < string > terminals) {
-                this->terminals.swap(terminals);
+                // this->terminals.swap(terminals);
+                for (string c: terminals)
+                  this->terminals.push_back(c);
                 return true;
         }
         bool setNonTerminals (vector < string > nonTerminals) {
-                this->nonTerminals.swap(nonTerminals);
+                // this->nonTerminals.swap(nonTerminals);
+                for (string c: nonTerminals)
+                  this->nonTerminals.push_back(c);
                 return true;
         }
         void preprocess () {
@@ -131,7 +141,7 @@ public:
                         findfirst(ch, 0, 0);
                         ptr += 1;
                         done[ptr] = ch;
-                        printf("\n First(%c) = { ", ch);
+                        // printf("\n First(%c) = { ", ch);
                         if (fi.find(ch)==fi.end())
                                 fi[ch] = set<char>();
                         calc_first[point1][point2++] = ch;
@@ -144,18 +154,18 @@ public:
                                         }
                                 }
                                 if(chk == 0) {
-                                        printf("%c, ", first[i]);
+                                        // printf("%c, ", first[i]);
                                         calc_first[point1][point2++] = first[i];
                                         fi[ch].insert(first[i]);
                                 }
                         }
-                        printf("}\n");
+                        // printf("}\n");
                         jm = n;
                         point1++;
                 }
-                printf("\n");
-                printf("-----------------------------------------------\n\n");
+                // printf("\n");
                 char donee[count];
+                // printf("-----------------------------------------------\n\n");
                 ptr = -1;
                 for(k = 0; k < count; k++) {
                         for(kay = 0; kay < 100; kay++) {
@@ -178,7 +188,7 @@ public:
                         follow(ck);
                         ptr += 1;
                         donee[ptr] = ck;
-                        printf(" Follow(%c) = { ", ck);
+                        // printf(" Follow(%c) = { ", ck);
                         if (fo.find(ck)==fo.end())
                                 fo[ck] = set<char>();
                         calc_follow[point1][point2++] = ck;
@@ -191,12 +201,12 @@ public:
                                         }
                                 }
                                 if(chk == 0) {
-                                        printf("%c, ", f[i]);
+                                        // printf("%c, ", f[i]);
                                         calc_follow[point1][point2++] = f[i];
                                         fo[ck].insert(f[i]);
                                 }
                         }
-                        printf(" }\n\n");
+                        // printf(" }\n\n");
                         km = m;
                         point1++;
                 }
@@ -304,6 +314,10 @@ public:
 
         Item closure (Item item) {
           for (int i=0; i<item.noOfRules; ++i) {
+            if (item.expanded[i]==false)
+              item.expanded[i] = true;
+            else
+              return item;
             int posDot = item.rhs[i].find(".");
             int rhslen = item.rhs[i].length();
             if (rhslen-1==posDot)
@@ -315,6 +329,7 @@ public:
                   string temp = "."+ p.rhs;
                   item.lhs.push_back(p.lhs);
                   item.rhs.push_back(temp);
+                  item.expanded.push_back(false);
                   item.noOfRules += 1;
                   set<char> lookahead;
                   if (posDot+2==rhslen) {
@@ -346,17 +361,113 @@ public:
           lookahead.insert('$');
           temp.lookahead.push_back(lookahead);
           temp.noOfRules = 1;
+          temp.expanded.push_back(false);
           temp = closure(temp);
           items.push_back(temp);
-          noOfItems = 1;
-
-          for (Item item: items) {
+          int oldSize = 0;
+          int curItem = -1;
+          while (curItem!=items.size()-1) {
+            curItem += 1;
+            Item item = items[curItem];
+            item = closure(item);
+            oldSize = items.size();
+            cout << item;
+            vector <Item> toBeInserted;
             for (int i=0; i<item.noOfRules; ++i) {
               int posDot = item.rhs[i].find(".");
               int rhslen = item.rhs[i].length();
-              bool marked[item.noOfRules] = {false};
-              if (rhslen-1==posDot)
-                continue;
+              if (rhslen-1==posDot) {
+                1;
+              }
+            }
+            for (string c: this->terminals) {
+              Item temp = Item();
+              for (int i=0; i<item.noOfRules; ++i) {
+                int posDot = item.rhs[i].find(".");
+                int rhslen = item.rhs[i].length();
+                if (c==item.rhs[i].substr(posDot+1, posDot+1)) {
+                  string newrhs = item.rhs[i].substr(0, posDot) + c + "."+item.rhs[i].substr(posDot+2, rhslen);
+                  string newlhs = item.lhs[i];
+                  set <char> newlookahead;
+                  for (char l: item.lookahead[i])
+                    newlookahead.insert(l);
+                  temp.lhs.push_back(newlhs);
+                  temp.rhs.push_back(newrhs);
+                  temp.lookahead.push_back(newlookahead);
+                  temp.expanded.push_back(false);
+                  temp.noOfRules += 1;
+                }
+              }
+              if (temp.noOfRules) {
+                // items.push_back(temp);
+                toBeInserted.push_back(temp);
+              }
+            }
+            for (string c: this->nonTerminals) {
+              Item temp = Item();
+              for (int i=0; i<item.noOfRules; ++i) {
+                int posDot = item.rhs[i].find(".");
+                int rhslen = item.rhs[i].length();
+                if (c==item.rhs[i].substr(posDot+1, posDot+1)) {
+                  string newrhs = item.rhs[i].substr(0, posDot) + c + "."+item.rhs[i].substr(posDot+2, rhslen);
+                  string newlhs = item.lhs[i];
+                  set <char> newlookahead;
+                  for (char l: item.lookahead[i])
+                    newlookahead.insert(l);
+                  temp.lhs.push_back(newlhs);
+                  temp.rhs.push_back(newrhs);
+                  temp.lookahead.push_back(newlookahead);
+                  temp.expanded.push_back(false);
+                  temp.noOfRules += 1;
+                }
+              }
+              if (temp.noOfRules) {
+                toBeInserted.push_back(temp);
+              }
+            }
+            oldSize = items.size();
+
+            for (Item item1: toBeInserted) {
+              vector <string> toBeInsertedString;
+              for (int i=0; i<item1.noOfRules; ++i) {
+                string s;
+                s = item1.lhs[i]+item1.rhs[i];
+                for (char c: item1.lookahead[i]) {
+                  s+=c;
+                }
+                toBeInsertedString.push_back(s);
+              }
+              sort(toBeInsertedString.begin(), toBeInsertedString.end());
+              bool present = false;
+              for (Item item2: items) {
+                vector <string> item2String;
+                for (int i=0; i<item2.noOfRules; ++i) {
+                  string s;
+                  s = item2.lhs[i]+item2.rhs[i];
+                  for (char c: item2.lookahead[i]) {
+                    s+=c;
+                  }
+                  item2String.push_back(s);
+                }
+                int ne = 0;
+                sort(item2String.begin(), item2String.end());
+                if (item2String.size()==toBeInsertedString.size()) {
+                  for (int i=item2String.size()-1; i>=0; --i) {
+                    if (item2String[i]!=toBeInsertedString[i]) {
+                      // cout << item2String[i] << ' ' << toBeInsertedString[i] << '\n';
+                      ne+=1;
+                    }
+                    else {
+                      // cout << item2String[i] << ' ' << toBeInsertedString[i] << '\n';
+                      1;
+                    }
+                  }
+                  if (ne==0)
+                    present = true;
+                }
+              }
+              if (present==false)
+                items.push_back(item1);
             }
           }
         }
@@ -369,7 +480,7 @@ int main () {
         pFile.open("input.txt", ios::in);
         if (pFile.is_open()) {
                 while (getline(pFile, line)) {
-                        cout << line << '\n';
+                        // cout << line << '\n';
                         int pos = line.find("=");
                         if (pos!=1) {
                                 cout << "Error";
@@ -390,10 +501,12 @@ int main () {
         vector < string > terminals;
         if (tFile.is_open()) {
                 while (getline(tFile, line)) {
-                        cout << line << '\n';
-                        string t = line.substr(0, 0);
+                        // cout << line << '\n';
+                        string t = line.substr(0, 1);
+                        G.insertTerminal(t);
                         terminals.push_back(t);
                 }
+                // G.setTerminals(terminals);
                 tFile.close();
         }
         else {
@@ -405,10 +518,11 @@ int main () {
         vector < string > nonTerminals;
         if (nFile.is_open()) {
                 while (getline(nFile, line)) {
-                        cout << line << '\n';
-                        string t = line.substr(0, 0);
+                        // cout << line << '\n';
+                        string t = line.substr(0, 1);
                         nonTerminals.push_back(t);
                 }
+                G.setNonTerminals(nonTerminals);
                 nFile.close();
         }
         else {
