@@ -3,554 +3,541 @@
 using namespace std;
 
 class Production {
-public:
+    public:
         string lhs;
-        string rhs;
+    string rhs;
 
-        Production (string lhs, string rhs) {
-                this->lhs = lhs;
-                this->rhs = rhs;
-        }
-        string get_lhs(){
-                return lhs;
-        }
-        string get_rhs(){
-                return rhs;
-        }
-        string str() {
-            string temp = "=";
-            return lhs+temp+rhs;
-        }
+    Production(string lhs, string rhs) {
+        this->lhs = lhs;
+        this->rhs = rhs;
+    }
+    string get_lhs() {
+        return lhs;
+    }
+    string get_rhs() {
+        return rhs;
+    }
+    string str() {
+        string temp = "=";
+        return lhs + temp + rhs;
+    }
 };
 
 class Item {
-public:
-  vector <string> lhs;
-  vector <string> rhs;
-  vector < set< char > > lookahead;
-  int noOfRules;
-  vector <bool> expanded;
+    public:
+        vector < string > lhs;
+    vector < string > rhs;
+    vector < set < char > > lookahead;
+    int noOfRules;
+    vector < bool > expanded;
 
-  bool isEqual (Item it) {
-    for (int i=0; i<noOfRules; ++i) {
-      if (it.lhs[i].compare(this->lhs[i])!=0 || it.rhs[i].compare(this->rhs[i])!=0 || it.lookahead[i]!=this->lookahead[i])
-        return false;
+    bool isEqual(Item it) {
+        for (int i = 0; i < noOfRules; ++i) {
+            if (it.lhs[i].compare(this->lhs[i]) != 0 || it.rhs[i].compare(this->rhs[i]) != 0 || it.lookahead[i] != this->lookahead[i])
+                return false;
+        }
+        return true;
     }
-    return true;
-  }
 };
 
-ostream & operator << (ostream &out, Item temp) {
-  cout << "ITEM : ";
-  for (int i=0; i<temp.noOfRules; ++i) {
-    cout << temp.lhs[i] << " -> " << temp.rhs[i] << " | ";
-    for (char c: temp.lookahead[i]) {
-      cout << c << " ";
+ostream & operator << (ostream & out, Item temp) {
+    cout << "ITEM : ";
+    for (int i = 0; i < temp.noOfRules; ++i) {
+        cout << temp.lhs[i] << " -> " << temp.rhs[i] << " | ";
+        for (char c: temp.lookahead[i]) {
+            cout << c << " ";
+        }
+        cout << "\t";
     }
-    cout << "\t";
-  }
-  cout << '\n';
-  return out;
+    cout << '\n';
+    return out;
 }
 
 class Grammar {
-private:
+    private:
         unsigned int noOfProductions;
-        vector <Production> productions;
-        vector <string> terminals;
-        vector <string> nonTerminals;
-        vector <Item> items;
-        unsigned int noOfItems;
+    vector < Production > productions;
+    vector < string > terminals;
+    vector < string > nonTerminals;
+    vector < Item > items;
+    unsigned int noOfItems;
+    string table[50][500];
+    map < char, set < char > > fi;
+    map < char, set < char > > fo;
 
-        int count, n;
-        char calc_first[10][100];
-        char calc_follow[10][100];
-        int m;
-        char production[10][10];
-        char f[10], first[10];
-        int k;
-        char ck;
-        int e;
-        bool called[300];
-        string table[50][500];
-        set < pair <char, char> > equal;
-        map <char, set<char> > fi;
-        map <char, set<char> > fo;
-public:
+    set < pair < char, char > > equal;
+    int count, n;
+    char calc_first[10][100];
+    char calc_follow[10][100];
+    int m;
+    char production[10][10];
+    char f[10], first[10];
+    int k;
+    char ck;
+    int e;
+    bool called[300];
+    public:
         Grammar() {
-                noOfProductions = 0;
-                m = 0;
-                n = 0;
+            noOfProductions = 0;
+            m = 0;
+            n = 0;
         }
-        int get_no_of_productions(){
-                return this->noOfProductions;
+    int get_no_of_productions() {
+        return this->noOfProductions;
+    }
+    Production get_productions(int i) {
+        return productions[i];
+    }
+    bool insertProduction(Production p) {
+        this->productions.push_back(p);
+        this->noOfProductions += 1;
+        return true;
+    }
+    bool insertTerminal(string c) {
+        this->terminals.push_back(c);
+        return true;
+    }
+    bool setTerminals(vector < string > terminals) {
+        // this->terminals.swap(terminals);
+        for (string c: terminals)
+            this->terminals.push_back(c);
+        return true;
+    }
+    bool setNonTerminals(vector < string > nonTerminals) {
+        // this->nonTerminals.swap(nonTerminals);
+        for (string c: nonTerminals)
+            this->nonTerminals.push_back(c);
+        return true;
+    }
+    void preprocess() {
+        int jm = 0;
+        int km = 0;
+        int i, choice;
+        string c, ch;
+        count = this->get_no_of_productions();
+        int kay;
+        char done[count];
+        int ptr = -1;
+        for (k = 0; k < count; k++) {
+            for (kay = 0; kay < 100; kay++) {
+                calc_first[k][kay] = '!';
+            }
         }
-        Production get_productions(int i){
-                return productions[i];
+        for (i = 0; i < count; ++i) {
+            string temp = this->productions[i].str();
+            strncpy(production[i], temp.c_str(), sizeof(temp) - 1);
+            production[i][sizeof(temp) - 1] = '\0';
+            cout << production[i] << '\n';
         }
-        bool insertProduction (Production p) {
-                this->productions.push_back(p);
-                this->noOfProductions+=1;
-                return true;
-        }
-        bool insertTerminal (string c) {
-          this->terminals.push_back(c);
-          return true;
-        }
-        bool setTerminals (vector < string > terminals) {
-                // this->terminals.swap(terminals);
-                for (string c: terminals)
-                  this->terminals.push_back(c);
-                return true;
-        }
-        bool setNonTerminals (vector < string > nonTerminals) {
-                // this->nonTerminals.swap(nonTerminals);
-                for (string c: nonTerminals)
-                  this->nonTerminals.push_back(c);
-                return true;
-        }
-        void preprocess () {
-                int jm = 0;
-                int km = 0;
-                int i, choice;
-                string c, ch;
-                count = this->get_no_of_productions();
-                int kay;
-                char done[count];
-                int ptr = -1;
-                for(k = 0; k < count; k++) {
-                        for(kay = 0; kay < 100; kay++) {
-                                calc_first[k][kay] = '!';
-                        }
+        int point1 = 0, point2, xxx;
+        for (k = 0; k < count; k++) {
+            char ch = this->get_productions(k).get_lhs()[0];
+            point2 = 0;
+            xxx = 0;
+            for (kay = 0; kay <= ptr; kay++)
+                if (ch == done[kay])
+                    xxx = 1;
+            if (xxx == 1)
+                continue;
+            findfirst(ch, 0, 0);
+            ptr += 1;
+            done[ptr] = ch;
+            // printf("\n First(%c) = { ", ch);
+            if (fi.find(ch) == fi.end())
+                fi[ch] = set < char > ();
+            calc_first[point1][point2++] = ch;
+            for (i = 0 + jm; i < n; i++) {
+                int lark = 0, chk = 0;
+                for (lark = 0; lark < point2; lark++) {
+                    if (first[i] == calc_first[point1][lark]) {
+                        chk = 1;
+                        break;
+                    }
                 }
-                for (i=0; i< count; ++i) {
-                        string temp = this->productions[i].str();
-                        strncpy(production[i], temp.c_str(), sizeof(temp)-1);
-                        production[i][sizeof(temp)-1] = '\0';
-                        cout << production[i] << '\n';
+                if (chk == 0) {
+                    // printf("%c, ", first[i]);
+                    calc_first[point1][point2++] = first[i];
+                    fi[ch].insert(first[i]);
                 }
-                int point1 = 0, point2, xxx;
-                for(k = 0; k < count; k++)  {
-                        char ch = this->get_productions(k).get_lhs()[0];
-                        point2 = 0;
-                        xxx = 0;
-                        for(kay = 0; kay <= ptr; kay++)
-                                if(ch == done[kay])
-                                        xxx = 1;
-                        if (xxx == 1)
-                                continue;
-                        findfirst(ch, 0, 0);
-                        ptr += 1;
-                        done[ptr] = ch;
-                        // printf("\n First(%c) = { ", ch);
-                        if (fi.find(ch)==fi.end())
-                                fi[ch] = set<char>();
-                        calc_first[point1][point2++] = ch;
-                        for(i = 0 + jm; i < n; i++) {
-                                int lark = 0, chk = 0;
-                                for(lark = 0; lark < point2; lark++) {
-                                        if (first[i] == calc_first[point1][lark]) {
-                                                chk = 1;
-                                                break;
-                                        }
-                                }
-                                if(chk == 0) {
-                                        // printf("%c, ", first[i]);
-                                        calc_first[point1][point2++] = first[i];
-                                        fi[ch].insert(first[i]);
-                                }
-                        }
-                        // printf("}\n");
-                        jm = n;
-                        point1++;
-                }
-                // printf("\n");
-                char donee[count];
-                // printf("-----------------------------------------------\n\n");
-                ptr = -1;
-                for(k = 0; k < count; k++) {
-                        for(kay = 0; kay < 100; kay++) {
-                                calc_follow[k][kay] = '!';
-                        }
-                }
-                point1 = 0;
-                int land = 0;
+            }
+            // printf("}\n");
+            jm = n;
+            point1++;
+        }
+        // printf("\n");
+        char donee[count];
+        // printf("-----------------------------------------------\n\n");
+        ptr = -1;
+        for (k = 0; k < count; k++) {
+            for (kay = 0; kay < 100; kay++) {
+                calc_follow[k][kay] = '!';
+            }
+        }
+        point1 = 0;
+        int land = 0;
 
-                for(e = 0; e < count; e++) {
-                        ck = production[e][0];
-                        point2 = 0;
-                        xxx = 0;
-                        for(kay = 0; kay <= ptr; kay++)
-                                if(ck == donee[kay])
-                                        xxx = 1;
-                        if (xxx == 1)
-                                continue;
-                        land += 1;
-                        follow(ck);
-                        ptr += 1;
-                        donee[ptr] = ck;
-                        // printf(" Follow(%c) = { ", ck);
-                        if (fo.find(ck)==fo.end())
-                                fo[ck] = set<char>();
-                        calc_follow[point1][point2++] = ck;
-                        for(i = 0 + km; i < m; i++) {
-                                int lark = 0, chk = 0;
-                                for(lark = 0; lark < point2; lark++) {
-                                        if (f[i] == calc_follow[point1][lark]) {
-                                                chk = 1;
-                                                break;
-                                        }
-                                }
-                                if(chk == 0) {
-                                        // printf("%c, ", f[i]);
-                                        calc_follow[point1][point2++] = f[i];
-                                        fo[ck].insert(f[i]);
-                                }
-                        }
-                        // printf(" }\n\n");
-                        km = m;
-                        point1++;
+        for (e = 0; e < count; e++) {
+            ck = production[e][0];
+            point2 = 0;
+            xxx = 0;
+            for (kay = 0; kay <= ptr; kay++)
+                if (ck == donee[kay])
+                    xxx = 1;
+            if (xxx == 1)
+                continue;
+            land += 1;
+            follow(ck);
+            ptr += 1;
+            donee[ptr] = ck;
+            // printf(" Follow(%c) = { ", ck);
+            if (fo.find(ck) == fo.end())
+                fo[ck] = set < char > ();
+            calc_follow[point1][point2++] = ck;
+            for (i = 0 + km; i < m; i++) {
+                int lark = 0, chk = 0;
+                for (lark = 0; lark < point2; lark++) {
+                    if (f[i] == calc_follow[point1][lark]) {
+                        chk = 1;
+                        break;
+                    }
                 }
-
-                for (set< pair<char, char> >::iterator i = equal.begin(); i!=equal.end(); ++i) {
-                        char c1 = (*i).first;
-                        char c2 = (*i).second;
-                        fo[c1].insert(fo[c2].begin(), fo[c2].end());
+                if (chk == 0) {
+                    // printf("%c, ", f[i]);
+                    calc_follow[point1][point2++] = f[i];
+                    fo[ck].insert(f[i]);
                 }
-
-
-                for (map <char, set <char> >::iterator i = fi.begin(); i!=fi.end(); ++i) {
-                        cout << (*i).first << " : ";
-                        for (set<char>::iterator j = (*i).second.begin(); j!=(*i).second.end(); ++j) {
-                                cout << (*j) << ' ';
-                        }
-                        cout << '\n';
-                }
-
-                for (map <char, set <char> >::iterator i = fo.begin(); i!=fo.end(); ++i) {
-                        cout << (*i).first << " : ";
-                        for (set<char>::iterator j = (*i).second.begin(); j!=(*i).second.end(); ++j) {
-                                cout << (*j) << ' ';
-                        }
-                        cout << '\n';
-                }
+            }
+            // printf(" }\n\n");
+            km = m;
+            point1++;
         }
 
-        void follow(char c) {
-                called[c]=true;
-                int i, j;
-                if(production[0][0] == c) {
-                        f[m++] = '$';
-                }
-                for(i = 0; i < 10; i++) {
-                        for(j = 2;j < 10; j++) {
-                                if(production[i][j] == c) {
-                                        if(production[i][j+1] != '\0') {
-                                                followfirst(production[i][j+1], i, (j+2));
-                                                }
-                                        if(production[i][j+1]=='\0' && c!=production[i][0]) {
-//                                              cout << "I : " << i << ' ' << production[i] << '\n';
-                                                if (!called[production[i][0]])
-                                                        follow(production[i][0]);
-                                                else
-                                                        equal.insert(make_pair(c, production[i][0]));
-                                        }
-                                }
-                        }
-                }
-        }
-        void findfirst(char c, int q1, int q2) {
-                int j;
-                if(!(isupper(c))) {
-                        first[n++] = c;
-                }
-                for(j = 0; j < count; j++) {
-                        if(production[j][0] == c) {
-                                if(production[j][2] == '#') {
-                                        if(production[q1][q2] == '\0')
-                                                first[n++] = '#';
-                                        else if(production[q1][q2] != '\0'
-                                                        && (q1 != 0 || q2 != 0)) {
-                                                findfirst(production[q1][q2], q1, (q2+1));
-                                        }
-                                        else
-                                                first[n++] = '#';
-                                }
-                                else if(!isupper(production[j][2])) {
-                                        first[n++] = production[j][2];
-                                }
-                                else {
-                                        findfirst(production[j][2], j, 3);
-                                }
-                        }
-                }
+        for (set < pair < char, char > > ::iterator i = equal.begin(); i != equal.end(); ++i) {
+            char c1 = ( * i).first;
+            char c2 = ( * i).second;
+            fo[c1].insert(fo[c2].begin(), fo[c2].end());
         }
 
-        void followfirst(char c, int c1, int c2) {
-                int k;
-                if(!(isupper(c)))
-                        f[m++] = c;
-                else {
-                        int i = 0, j = 1;
-                        for(i = 0; i < count; i++) {
-                                if(calc_first[i][0] == c)
-                                        break;
-                        }
-                        while(calc_first[i][j] != '!') {
-                                if(calc_first[i][j] != '#') {
-                                        f[m++] = calc_first[i][j];
-                                }
-                                else {
-                                        if(production[c1][c2] == '\0') {
-                                                follow(production[c1][0]);
-                                        }
-                                        else {
-                                                followfirst(production[c1][c2], c1, c2+1);
-                                        }
-                                }
-                                j++;
-                        }
-                }
+        for (map < char, set < char > > ::iterator i = fi.begin(); i != fi.end(); ++i) {
+            cout << ( * i).first << " : ";
+            for (set < char > ::iterator j = ( * i).second.begin(); j != ( * i).second.end(); ++j) {
+                cout << ( * j) << ' ';
+            }
+            cout << '\n';
         }
 
-        Item closure (Item item) {
-          for (int i=0; i<item.noOfRules; ++i) {
-            if (item.expanded[i]==false)
-              item.expanded[i] = true;
+        for (map < char, set < char > > ::iterator i = fo.begin(); i != fo.end(); ++i) {
+            cout << ( * i).first << " : ";
+            for (set < char > ::iterator j = ( * i).second.begin(); j != ( * i).second.end(); ++j) {
+                cout << ( * j) << ' ';
+            }
+            cout << '\n';
+        }
+    }
+
+    void follow(char c) {
+        called[c] = true;
+        int i, j;
+        if (production[0][0] == c) {
+            f[m++] = '$';
+        }
+        for (i = 0; i < 10; i++) {
+            for (j = 2; j < 10; j++) {
+                if (production[i][j] == c) {
+                    if (production[i][j + 1] != '\0') {
+                        followfirst(production[i][j + 1], i, (j + 2));
+                    }
+                    if (production[i][j + 1] == '\0' && c != production[i][0]) {
+                        //                                              cout << "I : " << i << ' ' << production[i] << '\n';
+                        if (!called[production[i][0]])
+                            follow(production[i][0]);
+                        else
+                            equal.insert(make_pair(c, production[i][0]));
+                    }
+                }
+            }
+        }
+    }
+    void findfirst(char c, int q1, int q2) {
+        int j;
+        if (!(isupper(c))) {
+            first[n++] = c;
+        }
+        for (j = 0; j < count; j++) {
+            if (production[j][0] == c) {
+                if (production[j][2] == '#') {
+                    if (production[q1][q2] == '\0')
+                        first[n++] = '#';
+                    else if (production[q1][q2] != '\0' &&
+                        (q1 != 0 || q2 != 0)) {
+                        findfirst(production[q1][q2], q1, (q2 + 1));
+                    } else
+                        first[n++] = '#';
+                } else if (!isupper(production[j][2])) {
+                    first[n++] = production[j][2];
+                } else {
+                    findfirst(production[j][2], j, 3);
+                }
+            }
+        }
+    }
+
+    void followfirst(char c, int c1, int c2) {
+        int k;
+        if (!(isupper(c)))
+            f[m++] = c;
+        else {
+            int i = 0, j = 1;
+            for (i = 0; i < count; i++) {
+                if (calc_first[i][0] == c)
+                    break;
+            }
+            while (calc_first[i][j] != '!') {
+                if (calc_first[i][j] != '#') {
+                    f[m++] = calc_first[i][j];
+                } else {
+                    if (production[c1][c2] == '\0') {
+                        follow(production[c1][0]);
+                    } else {
+                        followfirst(production[c1][c2], c1, c2 + 1);
+                    }
+                }
+                j++;
+            }
+        }
+    }
+
+    Item closure(Item item) {
+        for (int i = 0; i < item.noOfRules; ++i) {
+            if (item.expanded[i] == false)
+                item.expanded[i] = true;
             else
-              return item;
+                return item;
             int posDot = item.rhs[i].find(".");
             int rhslen = item.rhs[i].length();
-            if (rhslen-1==posDot)
-              continue;
-            if (item.rhs[i][posDot+1]>='A' && item.rhs[i][posDot+1]<='Z') {
-              char newlhs = item.rhs[i][posDot+1];
-              for (Production p: this->productions) {
-                if (p.lhs[0]==newlhs) {
-                  string temp = "."+ p.rhs;
-                  item.lhs.push_back(p.lhs);
-                  item.rhs.push_back(temp);
-                  item.expanded.push_back(false);
-                  item.noOfRules += 1;
-                  set<char> lookahead;
-                  if (posDot+2==rhslen) {
-                    for (char c: item.lookahead[i]) {
-                      lookahead.insert(c);
+            if (rhslen - 1 == posDot)
+                continue;
+            if (item.rhs[i][posDot + 1] >= 'A' && item.rhs[i][posDot + 1] <= 'Z') {
+                char newlhs = item.rhs[i][posDot + 1];
+                for (Production p: this->productions) {
+                    if (p.lhs[0] == newlhs) {
+                        string temp = "." + p.rhs;
+                        item.lhs.push_back(p.lhs);
+                        item.rhs.push_back(temp);
+                        item.expanded.push_back(false);
+                        item.noOfRules += 1;
+                        set < char > lookahead;
+                        if (posDot + 2 == rhslen) {
+                            for (char c: item.lookahead[i]) {
+                                lookahead.insert(c);
+                            }
+                        } else if (item.rhs[i][posDot + 2] >= 'a' && item.rhs[i][posDot + 2] <= 'z') {
+                            lookahead.insert(item.rhs[i][posDot + 2]);
+                        } else {
+                            for (char c: fi[item.rhs[i][posDot + 2]]) {
+                                lookahead.insert(c);
+                            }
+                        }
+                        item.lookahead.push_back(lookahead);
                     }
-                  }
-                  else if (item.rhs[i][posDot+2]>='a' && item.rhs[i][posDot+2]<='z') {
-                    lookahead.insert(item.rhs[i][posDot+2]);
-                  }
-                  else {
-                    for (char c: fi[item.rhs[i][posDot+2]]) {
-                      lookahead.insert(c);
-                    }
-                  }
-                  item.lookahead.push_back(lookahead);
                 }
-              }
             }
-          }
-          return item;
         }
+        return item;
+    }
 
-        void constructItems() {
-          Item temp = Item();
-          temp.lhs.push_back("Z");
-          temp.rhs.push_back(".S");
-          set <char> lookahead;
-          lookahead.insert('$');
-          temp.lookahead.push_back(lookahead);
-          temp.noOfRules = 1;
-          temp.expanded.push_back(false);
-          temp = closure(temp);
-          items.push_back(temp);
-          int oldSize = 0;
-          int curItem = -1;
-          vector <bool> terminalType;
-          while (curItem!=items.size()-1) {
+    void constructItems() {
+        Item temp = Item();
+        temp.lhs.push_back("Z");
+        temp.rhs.push_back(".S");
+        set < char > lookahead;
+        lookahead.insert('$');
+        temp.lookahead.push_back(lookahead);
+        temp.noOfRules = 1;
+        temp.expanded.push_back(false);
+        temp = closure(temp);
+        items.push_back(temp);
+        int oldSize = 0;
+        int curItem = -1;
+        vector < bool > terminalType;
+        while (curItem != items.size() - 1) {
             curItem += 1;
             Item item = items[curItem];
             item = closure(item);
             oldSize = items.size();
             cout << item;
-            vector <Item> toBeInserted;
-            for (int i=0; i<item.noOfRules; ++i) {
-              int posDot = item.rhs[i].find(".");
-              int rhslen = item.rhs[i].length();
-              if (rhslen-1==posDot) {
-                int index = -1;
-                string s = item.lhs[i]+item.rhs[i].substr(0,posDot);
-                for (int i=0; i<noOfProductions; ++i) {
-                  string t = productions[i].lhs+productions[i].rhs;
-                  if (t==s) {
-                    index = i;
-                  }
-                }
-                for (char c: item.lookahead[i]) {
-                  table[curItem][c] = 'r'+to_string(index);
-                }
-              }
-            }
-            vector <string> nextSym;
-            for (string c: this->terminals) {
-              Item temp = Item();
-              for (int i=0; i<item.noOfRules; ++i) {
+            vector < Item > toBeInserted;
+            for (int i = 0; i < item.noOfRules; ++i) {
                 int posDot = item.rhs[i].find(".");
                 int rhslen = item.rhs[i].length();
-                if (c==item.rhs[i].substr(posDot+1, posDot+1)) {
-                  string newrhs = item.rhs[i].substr(0, posDot) + c + "."+item.rhs[i].substr(posDot+2, rhslen);
-                  string newlhs = item.lhs[i];
-                  set <char> newlookahead;
-                  for (char l: item.lookahead[i])
-                    newlookahead.insert(l);
-                  temp.lhs.push_back(newlhs);
-                  temp.rhs.push_back(newrhs);
-                  temp.lookahead.push_back(newlookahead);
-                  temp.expanded.push_back(false);
-                  temp.noOfRules += 1;
+                if (rhslen - 1 == posDot) {
+                    int index = -1;
+                    string s = item.lhs[i] + item.rhs[i].substr(0, posDot);
+                    for (int i = 0; i < noOfProductions; ++i) {
+                        string t = productions[i].lhs + productions[i].rhs;
+                        if (t == s) {
+                            index = i;
+                        }
+                    }
+                    for (char c: item.lookahead[i]) {
+                        table[curItem][c] = 'r' + to_string(index);
+                    }
                 }
-              }
-              if (temp.noOfRules) {
-                // items.push_back(temp);
-                toBeInserted.push_back(temp);
-                terminalType.push_back(true);
-                nextSym.push_back(c);
-              }
+            }
+            vector < string > nextSym;
+            for (string c: this->terminals) {
+                Item temp = Item();
+                for (int i = 0; i < item.noOfRules; ++i) {
+                    int posDot = item.rhs[i].find(".");
+                    int rhslen = item.rhs[i].length();
+                    if (c == item.rhs[i].substr(posDot + 1, posDot + 1)) {
+                        string newrhs = item.rhs[i].substr(0, posDot) + c + "." + item.rhs[i].substr(posDot + 2, rhslen);
+                        string newlhs = item.lhs[i];
+                        set < char > newlookahead;
+                        for (char l: item.lookahead[i])
+                            newlookahead.insert(l);
+                        temp.lhs.push_back(newlhs);
+                        temp.rhs.push_back(newrhs);
+                        temp.lookahead.push_back(newlookahead);
+                        temp.expanded.push_back(false);
+                        temp.noOfRules += 1;
+                    }
+                }
+                if (temp.noOfRules) {
+                    // items.push_back(temp);
+                    toBeInserted.push_back(temp);
+                    terminalType.push_back(true);
+                    nextSym.push_back(c);
+                }
             }
             for (string c: this->nonTerminals) {
-              Item temp = Item();
-              for (int i=0; i<item.noOfRules; ++i) {
-                int posDot = item.rhs[i].find(".");
-                int rhslen = item.rhs[i].length();
-                if (c==item.rhs[i].substr(posDot+1, posDot+1)) {
-                  string newrhs = item.rhs[i].substr(0, posDot) + c + "."+item.rhs[i].substr(posDot+2, rhslen);
-                  string newlhs = item.lhs[i];
-                  set <char> newlookahead;
-                  for (char l: item.lookahead[i])
-                    newlookahead.insert(l);
-                  temp.lhs.push_back(newlhs);
-                  temp.rhs.push_back(newrhs);
-                  temp.lookahead.push_back(newlookahead);
-                  temp.expanded.push_back(false);
-                  temp.noOfRules += 1;
+                Item temp = Item();
+                for (int i = 0; i < item.noOfRules; ++i) {
+                    int posDot = item.rhs[i].find(".");
+                    int rhslen = item.rhs[i].length();
+                    if (c == item.rhs[i].substr(posDot + 1, posDot + 1)) {
+                        string newrhs = item.rhs[i].substr(0, posDot) + c + "." + item.rhs[i].substr(posDot + 2, rhslen);
+                        string newlhs = item.lhs[i];
+                        set < char > newlookahead;
+                        for (char l: item.lookahead[i])
+                            newlookahead.insert(l);
+                        temp.lhs.push_back(newlhs);
+                        temp.rhs.push_back(newrhs);
+                        temp.lookahead.push_back(newlookahead);
+                        temp.expanded.push_back(false);
+                        temp.noOfRules += 1;
+                    }
                 }
-              }
-              if (temp.noOfRules) {
-                toBeInserted.push_back(temp);
-                terminalType.push_back(false);
-                nextSym.push_back(c);
-              }
+                if (temp.noOfRules) {
+                    toBeInserted.push_back(temp);
+                    terminalType.push_back(false);
+                    nextSym.push_back(c);
+                }
             }
             oldSize = items.size();
             int toBeInsertedIndex = -1;
             for (Item item1: toBeInserted) {
-              toBeInsertedIndex+=1;
-              vector <string> toBeInsertedString;
-              for (int i=0; i<item1.noOfRules; ++i) {
-                string s;
-                s = item1.lhs[i]+item1.rhs[i];
-                for (char c: item1.lookahead[i]) {
-                  s+=c;
-                }
-                toBeInsertedString.push_back(s);
-              }
-              sort(toBeInsertedString.begin(), toBeInsertedString.end());
-              bool present = false;
-              for (Item item2: items) {
-                vector <string> item2String;
-                for (int i=0; i<item2.noOfRules; ++i) {
-                  string s;
-                  s = item2.lhs[i]+item2.rhs[i];
-                  for (char c: item2.lookahead[i]) {
-                    s+=c;
-                  }
-                  item2String.push_back(s);
-                }
-                int ne = 0;
-                sort(item2String.begin(), item2String.end());
-                if (item2String.size()==toBeInsertedString.size()) {
-                  for (int i=item2String.size()-1; i>=0; --i) {
-                    if (item2String[i]!=toBeInsertedString[i]) {
-                      // cout << item2String[i] << ' ' << toBeInsertedString[i] << '\n';
-                      ne+=1;
+                toBeInsertedIndex += 1;
+                vector < string > toBeInsertedString;
+                for (int i = 0; i < item1.noOfRules; ++i) {
+                    string s;
+                    s = item1.lhs[i] + item1.rhs[i];
+                    for (char c: item1.lookahead[i]) {
+                        s += c;
                     }
-                    else {
-                      // cout << item2String[i] << ' ' << toBeInsertedString[i] << '\n';
-                      1;
-                    }
-                  }
-                  if (ne==0)
-                    present = true;
+                    toBeInsertedString.push_back(s);
                 }
-              }
-              if (present==false) {
-                table[curItem][nextSym[toBeInsertedIndex][0]]='s'+to_string(items.size());
-                items.push_back(item1);
-              }
+                sort(toBeInsertedString.begin(), toBeInsertedString.end());
+                bool present = false;
+                for (Item item2: items) {
+                    vector < string > item2String;
+                    for (int i = 0; i < item2.noOfRules; ++i) {
+                        string s;
+                        s = item2.lhs[i] + item2.rhs[i];
+                        for (char c: item2.lookahead[i]) {
+                            s += c;
+                        }
+                        item2String.push_back(s);
+                    }
+                    int ne = 0;
+                    sort(item2String.begin(), item2String.end());
+                    if (item2String.size() == toBeInsertedString.size()) {
+                        for (int i = item2String.size() - 1; i >= 0; --i) {
+                            if (item2String[i] != toBeInsertedString[i]) {
+                                // cout << item2String[i] << ' ' << toBeInsertedString[i] << '\n';
+                                ne += 1;
+                            } else {
+                                // cout << item2String[i] << ' ' << toBeInsertedString[i] << '\n';
+                                1;
+                            }
+                        }
+                        if (ne == 0)
+                            present = true;
+                    }
+                }
+                if (present == false) {
+                    table[curItem][nextSym[toBeInsertedIndex][0]] = 's' + to_string(items.size());
+                    items.push_back(item1);
+                }
             }
-          }
         }
+    }
 };
 
-int main () {
-        Grammar G;
-        string line;
-        ifstream pFile;
-        pFile.open("input.txt", ios::in);
-        if (pFile.is_open()) {
-                while (getline(pFile, line)) {
-                        // cout << line << '\n';
-                        int pos = line.find("=");
-                        if (pos!=1) {
-                                cout << "Error";
-                                exit(0);
-                        }
-                        string lhs = line.substr(0, pos);
-                        string rhs = line.substr(pos+1, line.length());
-                        G.insertProduction(Production(lhs, rhs));
-                }
-                pFile.close();
+int main() {
+    Grammar G;
+    string line;
+    ifstream pFile;
+    pFile.open("input.txt", ios:: in );
+    if (pFile.is_open()) {
+        while (getline(pFile, line)) {
+            // cout << line << '\n';
+            int pos = line.find("=");
+            if (pos != 1) {
+                cout << "Error";
+                exit(0);
+            }
+            string lhs = line.substr(0, pos);
+            string rhs = line.substr(pos + 1, line.length());
+            G.insertProduction(Production(lhs, rhs));
         }
-        else {
-                cout << "Unable to read productions file\n";
-        }
+        pFile.close();
+    } else {
+        cout << "Unable to read productions file\n";
+    }
 
-        ifstream tFile;
-        tFile.open("terminals.txt", ios::in);
-        vector < string > terminals;
-        if (tFile.is_open()) {
-                while (getline(tFile, line)) {
-                        // cout << line << '\n';
-                        string t = line.substr(0, 1);
-                        G.insertTerminal(t);
-                        terminals.push_back(t);
-                }
-                // G.setTerminals(terminals);
-                tFile.close();
+    ifstream tFile;
+    tFile.open("terminals.txt", ios:: in );
+    vector < string > terminals;
+    if (tFile.is_open()) {
+        while (getline(tFile, line)) {
+            // cout << line << '\n';
+            string t = line.substr(0, 1);
+            G.insertTerminal(t);
+            terminals.push_back(t);
         }
-        else {
-                cout << "Unable to read terminals file\n";
-        }
+        // G.setTerminals(terminals);
+        tFile.close();
+    } else {
+        cout << "Unable to read terminals file\n";
+    }
 
-        ifstream nFile;
-        nFile.open("nonterminals.txt", ios::in);
-        vector < string > nonTerminals;
-        if (nFile.is_open()) {
-                while (getline(nFile, line)) {
-                        // cout << line << '\n';
-                        string t = line.substr(0, 1);
-                        nonTerminals.push_back(t);
-                }
-                G.setNonTerminals(nonTerminals);
-                nFile.close();
+    ifstream nFile;
+    nFile.open("nonterminals.txt", ios:: in );
+    vector < string > nonTerminals;
+    if (nFile.is_open()) {
+        while (getline(nFile, line)) {
+            // cout << line << '\n';
+            string t = line.substr(0, 1);
+            nonTerminals.push_back(t);
         }
-        else {
-                cout << "Unable to read nonTerminals file\n";
-        }
+        G.setNonTerminals(nonTerminals);
+        nFile.close();
+    } else {
+        cout << "Unable to read nonTerminals file\n";
+    }
 
-        cout << "\nLOL\n\n";
-        G.preprocess();
-        G.constructItems();
-        return 0;
+    G.preprocess();
+    G.constructItems();
+    return 0;
 }
