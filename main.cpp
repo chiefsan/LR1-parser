@@ -61,7 +61,7 @@ class Grammar {
     vector < string > nonTerminals;
     vector < Item > items;
     unsigned int noOfItems;
-    string table[50][500];
+    // string table[50][500];
     map < char, set < char > > fi;
     map < char, set < char > > fo;
 
@@ -77,11 +77,12 @@ class Grammar {
     int e;
     bool called[300];
     public:
-        Grammar() {
-            noOfProductions = 0;
-            m = 0;
-            n = 0;
-        }
+        string table[50][500];
+    Grammar() {
+        noOfProductions = 0;
+        m = 0;
+        n = 0;
+    }
     int get_no_of_productions() {
         return this->noOfProductions;
     }
@@ -449,7 +450,9 @@ class Grammar {
                 }
                 sort(toBeInsertedString.begin(), toBeInsertedString.end());
                 bool present = false;
+                int index = -1;
                 for (Item item2: items) {
+                    index += 1;
                     vector < string > item2String;
                     for (int i = 0; i < item2.noOfRules; ++i) {
                         string s;
@@ -471,8 +474,10 @@ class Grammar {
                                 1;
                             }
                         }
-                        if (ne == 0)
+                        if (ne == 0) {
                             present = true;
+                            table[curItem][nextSym[toBeInsertedIndex][0]] = 's' + to_string(index);
+                        }
                     }
                 }
                 if (present == false) {
@@ -481,6 +486,72 @@ class Grammar {
                 }
             }
         }
+    }
+
+    bool parse_string(string input) {
+        input = input + '$';
+        stack < string > s;
+        stack < char > symbol;
+        string action;
+        s.push("0");
+        char x;
+        int ii = 0;
+        while (!(symbol.top() == 'S' && input == "$")) {
+            x = input[ii];
+            input = input.erase(0, 1);
+            action = table[stoi(s.top())][x];
+            if (action[0] == 's') {
+                symbol.push(x);
+                s.push(action.substr(1, action.length()));
+            } else {
+                if (stoi(action.substr(1, action.length())) == -1 && input == "$") {
+                    return true;
+                }
+                L1:
+                    string rhs = productions[stoi(action.substr(1, action.length()))].rhs;
+                string lhs = productions[stoi(action.substr(1, action.length()))].lhs;
+                cout << lhs << "->" << rhs << '\n';
+                for (int i = 0; i < rhs.size(); i++) {
+                    symbol.pop();
+                    s.pop();
+                }
+
+                symbol.push(lhs[0]);
+
+                string xx = table[stoi(s.top())][symbol.top()];
+                if (xx[0] == 's') {
+                    s.push(xx.substr(1, xx.length()));
+                } else {
+                    action = xx;
+                    goto L1;
+                }
+                input = x + input;
+            }
+        }
+        cout << "Accepted\n";
+        return true;
+    }
+
+    void print_table() {
+        terminals.push_back("$");
+        cout << "   ";
+        for (int j = 0; j < nonTerminals.size(); j++)
+            cout << nonTerminals[j] << '\t';
+        for (int j = 0; j < terminals.size(); j++)
+            cout << terminals[j] << '\t';
+
+        cout << '\n';
+        for (int i = 0; i < items.size(); i++) {
+            cout << i << ' ';
+            for (int j = 0; j < nonTerminals.size(); j++) {
+                cout << table[i][nonTerminals[j][0]] << '\t';
+            }
+            for (int j = 0; j < terminals.size(); j++) {
+                cout << table[i][terminals[j][0]] << '\t';
+            }
+            cout << "\n";
+        }
+
     }
 };
 
@@ -502,6 +573,7 @@ int main() {
             G.insertProduction(Production(lhs, rhs));
         }
         pFile.close();
+
     } else {
         cout << "Unable to read productions file\n";
     }
@@ -539,5 +611,8 @@ int main() {
 
     G.preprocess();
     G.constructItems();
+    G.print_table();
+    G.parse_string("aabb");
+
     return 0;
 }
